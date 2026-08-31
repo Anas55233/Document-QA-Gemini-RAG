@@ -1,0 +1,125 @@
+/* h1 {
+    font-size: 50px !important;
+    color: cadetblue !important;
+} */
+
+
+/* Main Title */
+
+h1 {
+    font-size: 42px !important;
+    font-weight: 700 !important;
+    color: cadetblue !important;
+    margin-bottom: 5px !important;
+}
+
+h2 {
+    font-size: 28px !important;
+}
+
+p {
+    font-size: 16px !important;
+    color: rgb(4 29 19) !important;
+}
+
+
+/* Sidebar */
+
+section[data-testid="stSidebar"] {
+    background-color: rgb(212 225 228 / 23%) !important;
+}
+
+section[data-testid="stSidebar"] h2 {
+    color: cadetblue !important;
+    font-size: 24px !important;
+}
+
+section[data-testid="stSidebar"] p {
+    color: rgb(3 2 67) !important;
+    /* font-size: 24px !important; */
+}
+
+/* File Uploader */
+
+div[data-testid="stFileUploader"] {
+    background-color: white !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    border: 1px solid #d9dee5 !important;
+}
+
+div[data-testid="stFileUploader"] section {
+    border-radius: 10px !important;
+    font-size: 20px !important;
+
+}
+
+div[data-testid="stFileUploader"] p {
+    font-size: 16px !important;
+}
+
+/* Uploaded / Success Message */
+
+div[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    color: rgb(55 0 58) !important;
+    padding: 10px 14px !important;
+
+}
+
+
+/* Chat Input */
+
+div[data-testid="stChatInput"] {
+    border-radius: 16px !important;
+    padding: 4px !important;
+    border: 2px solid #b5d4f5;
+}
+
+/* Chat Messages */
+
+div[data-testid="stChatMessage"] {
+    padding: 12px !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+/* User Message */
+
+div[data-testid="stChatMessage"]:has(
+    div[data-testid="chatAvatarIcon-user"]
+) {
+    background-color: #eef7f7 !important;
+}
+
+
+/* Assistant Message */
+
+div[data-testid="stChatMessage"]:has(
+    div[data-testid="chatAvatarIcon-assistant"]
+) {
+    background-color: #f8fafc !important;
+}
+
+/* Sources Expander */
+
+div[data-testid="stExpander"] {
+    border-radius: 10px !important;
+    border: 1px solid #d9dee5 !important;
+    margin-top: 8px !important;
+}
+
+/* Main Page Background */
+
+.stApp {
+    background-color: #f8fafc !important;
+}
+
+div[data-testid="stBottomBlockContainer"] {
+    background-color: rgb(235 245 247) !important;
+}
+
+div[data-testid="stToolbar"] {
+    background-color: f8fafc !important;
+}
