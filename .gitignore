@@ -3,3 +3,8 @@
 .vscode/.env
 __pycache__/
 *.pyc
+
+extra_code.py
+final_rag.py
+test.css
+test_gemini.py
