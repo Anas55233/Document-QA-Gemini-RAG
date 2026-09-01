@@ -62,9 +62,6 @@ Document GPT/
 ├── app.py
 ├── rag.py
 ├── ingest.py
-├── final_rag.py
-├── extra_code.py
-├── test_gemini.py
 │
 ├── documents/
 │   ├── Visa Purpose.pdf
