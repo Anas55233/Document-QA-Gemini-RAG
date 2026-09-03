@@ -3,7 +3,7 @@
 # --------------------------------
 
 import streamlit as st
-from rag import answer_question
+from rag import answer_question, get_all_chunks, build_bm25_index
 from PyPDF2 import PdfReader
 import docx
 from langchain_core.documents import Document
@@ -54,13 +54,9 @@ if "messages" not in st.session_state:
 if "vector_store" not in st.session_state:
     st.session_state.vector_store = None
 
-# Store the name of the currently uploaded document
-if "uploaded_file_name" not in st.session_state:
-    st.session_state.uploaded_file_name = None
-
-# Track whether the current document has been processed
-if "processed_file_name" not in st.session_state:
-    st.session_state.processed_file_name = None
+# prevent re-processing the same document multiple times
+if "processed_files" not in st.session_state:
+    st.session_state.processed_files = set()
 
 # Track whether the current file is receiving its first question
 if "first_question_for_file" not in st.session_state:
@@ -73,6 +69,18 @@ if "uploaded_file_data" not in st.session_state:
 # Store the summary of the current document
 if "document_summary" not in st.session_state:
     st.session_state.document_summary = ""
+   
+# Store the BM25 index of the current document
+if "bm25_index" not in st.session_state:
+    st.session_state.bm25_index = None
+
+# Store all chunks of the current document
+if "all_chunks" not in st.session_state:
+    st.session_state.all_chunks = None
+
+# Store all uploaded documents
+if "all_documents" not in st.session_state:
+    st.session_state.all_documents = []
     
 
 # --------------------------------
@@ -136,142 +144,143 @@ with st.sidebar:
         "Upload a PDF, DOCX, or CSV file to get started."
     )
 
-    uploaded_file = st.file_uploader(
-        "Choose a document",
+    uploaded_files= st.file_uploader(
+        "Choose one or more documents",
         type=["pdf", "docx", "csv"],
-        label_visibility = "visible"
+        label_visibility = "visible",
+        accept_multiple_files=True
     )
 
-    if uploaded_file:
-        st.markdown("### 📄 Current Document")
-        st.info(f"**{uploaded_file.name}**")
-        st.caption(
-        f"Size: {uploaded_file.size / 1024:.1f} KB"
-    )
-        
-        # --------------------------------
-        # Step 6: Detect New Document
-        # --------------------------------
-        
-        
-         # Check whether this is a new file
-        if uploaded_file.name != st.session_state.uploaded_file_name:
+  
+    
+    if uploaded_files:
+        st.markdown("### 📄 Uploaded Documents")
+        for f in uploaded_files:
+            st.info(f"**{f.name}** ({f.size / 1024:.1f} KB)")
 
-            # New document detected
-            st.session_state.vector_store = None
+        new_files = [
+            f for f in uploaded_files
+            if f.name not in st.session_state.processed_files
+        ]
 
-            # Clear old conversation
-            st.session_state.messages = []
-
-            # Save the new file name
-            st.session_state.uploaded_file_name = uploaded_file.name
+        if new_files:
+            st.write(f"Processing {len(new_files)} new file(s)...")
+            # extraction/chunking/FAISS code will go HERE in the next step
             
-            # Save actual file data
-            st.session_state.uploaded_file_data = uploaded_file.getvalue()
-
-            # Mark this as a new document
-            st.session_state.first_question_for_file = True
-            
-            
-            
-            # --------------------------------
-            # Step 7: Extract Text
-            # --------------------------------
-
             documents = []
+            
+            for uploaded_file in new_files:
+                file_data = uploaded_file.getvalue()
+                
+                if uploaded_file.name.endswith(".pdf"):
 
-            if uploaded_file.name.endswith(".pdf"):
+                    reader = PdfReader(BytesIO(file_data))
 
-                reader = PdfReader(
-                    BytesIO(st.session_state.uploaded_file_data)
-                )
+                    for page_number, page in enumerate(reader.pages, start=1):
 
-                for page_number, page in enumerate(reader.pages, start=1):
+                        page_text = page.extract_text() or ""
 
-                    page_text = page.extract_text() or ""
+                        documents.append(
+                            Document(
+                                page_content=page_text,
+                                metadata={
+                                    "source": uploaded_file.name,
+                                    "page": page_number
+                                }
+                            )
+                        )
+                        
+                elif uploaded_file.name.endswith(".docx"):
+    
+                    doc = docx.Document(BytesIO(file_data))
+
+                    text = ""
+
+                    for para in doc.paragraphs:
+                        text += para.text + "\n"
 
                     documents.append(
                         Document(
-                            page_content=page_text,
+                            page_content=text,
                             metadata={
-                                "source": uploaded_file.name,
-                                "page": page_number
+                                "source": uploaded_file.name
                             }
                         )
                     )
+                
+                elif uploaded_file.name.endswith(".csv"):
+                    import pandas as pd
 
+                    df = pd.read_csv(BytesIO(file_data))
+                    text = df.to_string(index=False)
 
-            elif uploaded_file.name.endswith(".docx"):
-
-                doc = docx.Document(
-                    BytesIO(st.session_state.uploaded_file_data)
-                )
-
-                text = ""
-
-                for para in doc.paragraphs:
-                    text += para.text + "\n"
-
-                documents.append(
-                    Document(
-                        page_content=text,
-                        metadata={
-                            "source": uploaded_file.name
-                        }
+                    documents.append(
+                        Document(
+                            page_content=text,
+                            metadata={
+                                "source": uploaded_file.name
+                            }
+                        )
                     )
-                )
-            # st.success("Text extracted successfully!")
+                    
+            st.success("Text extracted successfully!")
+            st.session_state.all_documents.extend(documents)
             
             
             # --------------------------------
-            # Step 8: Documents Created
-            # --------------------------------
-
-            st.success(
-                f"{len(documents)} document sections created successfully!"
-            )
-            
-            # --------------------------------
-            # Step 9: Split Document into Chunks
+            # Split all documents into chunks
             # --------------------------------
 
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=2000,
                 chunk_overlap=400
             )
-
-            chunks = text_splitter.split_documents(documents)
             
-            # st.success( f"{len(chunks)} chunks indexed for searching")  
+            chunks = text_splitter.split_documents(
+                st.session_state.all_documents
+            )
             
-            # --------------------------------
-            # Step 10: Create Embeddings
-            # --------------------------------
+            st.success(
+                f"{len(st.session_state.all_documents)} document sections created "
+                f"and {len(chunks)} chunks created."
+            )
 
+           # --------------------------------
+           ## Create Embeddings
+           # --------------------------------
+            
             embeddings = HuggingFaceEmbeddings(
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
-            )
-            # st.success("Embeddings created successfully!")
-
+                )
+            
             # --------------------------------
-            # Step 11: Create FAISS Vector Store
+            # Create FAISS Vector Store
             # --------------------------------
-
-            st.session_state.vector_store = FAISS.from_documents(
+            
+            vector_store = FAISS.from_documents(
                 chunks,
                 embedding=embeddings
             )
-            # st.success("Document vector store created successfully!")
-
-
+            
             # --------------------------------
-            # Step 12: Mark File as Processed
+            # Store in Session State
+            #-------------------------------
+            st.session_state.vector_store = vector_store
+            
             # --------------------------------
+            # Build BM25 Index
+            # --------------------------------
+            st.session_state.all_chunks = get_all_chunks(vector_store)
+            st.session_state.bm25_index = build_bm25_index(st.session_state.all_chunks)
+            st.success("Document hybrid search initialized successfully!")
+            
+            # --------------------------------
+            # Mark files as processed
+            # --------------------------------
+            for uploaded_file in new_files:
+                st.session_state.processed_files.add(uploaded_file.name)
+                st.success("🟢 Document ready")
 
-            st.session_state.processed_file_name = uploaded_file.name
-
-            st.success("🟢 Document ready")
-                        
                         
 # --------------------------------
 # Step 13: Display Chat History
@@ -359,7 +368,9 @@ if question:
             response = answer_question(
                 question,
                 chat_history,
-                st.session_state.vector_store
+                st.session_state.vector_store,
+                st.session_state.bm25_index,
+                st.session_state.all_chunks
             )
 
         # First question is now completed
@@ -374,7 +385,9 @@ if question:
             response = answer_question(
                 question,
                 chat_history,
-                st.session_state.vector_store
+                st.session_state.vector_store,
+                st.session_state.bm25_index,
+                st.session_state.all_chunks
             )
 
         # --------------------------------

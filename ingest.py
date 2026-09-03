@@ -1,6 +1,6 @@
 from langchain_community.document_loaders import PyPDFLoader
 
-loader = PyPDFLoader("documents/Visa Purpose.pdf")
+loader = PyPDFLoader("bank statement.pdf")
 
 pdf_documents = loader.load()
 
@@ -12,7 +12,8 @@ docx_documents = docx_loader.load()
 print("PDF documents:", len(pdf_documents))
 print("DOCX documents:", len(docx_documents))
 
-documents = pdf_documents + docx_documents
+# documents = pdf_documents + docx_documents
+documents = pdf_documents
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -96,4 +97,4 @@ for i, document in enumerate(results, start=1):
     print(document.page_content)
 
     print("\nMetadata:")
-    print(document.metadata)
+    print(document.metadata["source"])
