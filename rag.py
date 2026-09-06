@@ -86,27 +86,21 @@ def bm25_search(bm25, all_docs, question, k=5):
     """
     query_words = clean_text(question)
     scores = bm25.get_scores(query_words)
-
     # Pair each chunk with its score
     pairs = list(zip(all_docs, scores))
-
     # Best (highest score) first
     pairs.sort(key=lambda pair: pair[1], reverse=True)
-
     return pairs[:k]
 
 
 def hybrid_search(vector_store, bm25, all_docs, question, k=10):
     # Search 1: by meaning (your existing FAISS search)
     vector_results = vector_store.similarity_search(question, k=k)
-
     # Search 2: by exact keywords (BM25)
     bm25_results = bm25_search(bm25, all_docs, question, k=k)
     bm25_docs = [doc for doc, score in bm25_results]
-
     # Combine both lists together
     combined = vector_results + bm25_docs
-
     # Remove exact duplicates, but keep chunks that appeared in both
     # (this naturally ranks doubly-found chunks higher when we count them)
     seen = {}
