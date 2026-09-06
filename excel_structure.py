@@ -1,3 +1,14 @@
+import os
+import re
+import json
+import pandas as pd
+import streamlit as st
+from rag import create_gemini_model
+
+from io import BytesIO
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 
 def markdown_table_to_excel(gemini_response):
@@ -285,11 +296,17 @@ Do not explain your answer.
     
     
     
-    def create_excel(question, context, chat_history):
-        data = extract_data_for_excel(
-        question,
-        context,
-        chat_history
-    )
+    
+#  def create_excel(question, context, chat_history):
+     
+#      data = extract_data_for_excel(
+#      question,
+#      context,
+#      chat_history
+#  )
+#     return data_to_excel(data)
 
+
+def create_excel(question, context, chat_history):
+    data = extract_data_for_excel(question, context, chat_history)
     return data_to_excel(data)
