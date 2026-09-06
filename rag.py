@@ -5,10 +5,13 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
+from openpyxl import Workbook
 # =========================================================
 # Add this near the top of rag.py, with your other imports
 # =========================================================
 from rank_bm25 import BM25Okapi
+import pandas as pd
+from io import BytesIO
 
 
 # load environment variables
@@ -122,15 +125,6 @@ def hybrid_search(vector_store, bm25, all_docs, question, k=10):
 
 
 
-# Define a function to create context:
-
-# def create_context(results):
-#     context = ""
-#     for result, score in results:
-#         context += result.page_content + "\n\n"
-#     return context
-
-
 def create_context(results):
     context = ""
     for result, score in results:
@@ -208,10 +202,13 @@ def create_gemini_model():
         raise ValueError("Please set the GEMINI_API_KEY environment variable")
     model = ChatGoogleGenerativeAI(
         model="gemini-3.6-flash",
-        google_api_key=gemini_api_key
+        google_api_key=gemini_api_key,
+        timeout = 60
     )
     return model
 
+
+    
 # define funtion of answer_quetion():
 def answer_question(question, chat_history="", vector_store = None, bm25=None, all_chunks=None):
     if vector_store is None:
@@ -248,23 +245,4 @@ def answer_question(question, chat_history="", vector_store = None, bm25=None, a
 }
 
 
-
-
-# # =========================================================
-# # Add this at the very bottom of rag.py, to test independently
-# # =========================================================
-
-# if __name__ == "__main__":
-#     vector_store = load_vector_store()
-
-#     all_chunks = get_all_chunks(vector_store)
-#     bm25 = build_bm25_index(all_chunks)
-
-#     results = bm25_search(bm25, all_chunks, "date range of statement")
-
-#     print("---BM25 KEYWORD SEARCH RESULTS---")
-#     for doc, score in results:
-#         print(doc.metadata["source"], "| score:", score)
-#         print(doc.page_content[:500])  # Print first 500 characters of the chunk
-#         print("---")
 
