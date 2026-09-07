@@ -143,7 +143,7 @@ For Excel-related requests, the application can process structured spreadsheet i
 ## 📁 Project Structure
 
 ```text
-Document GPT/
+Document Gemini/
 │
 ├── app.py
 ├── rag.py
