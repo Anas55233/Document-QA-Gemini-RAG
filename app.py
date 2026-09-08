@@ -24,7 +24,7 @@ from excel_structure import check_excel_possible, create_excel
 # --------------------------------
 
 st.set_page_config(
-    page_title="Document GPT",
+    page_title="Document Gemini",
     page_icon="📄",
     layout="wide",
     initial_sidebar_state="expanded"
